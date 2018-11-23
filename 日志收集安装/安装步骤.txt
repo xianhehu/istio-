@@ -1,0 +1,40 @@
+yum install java-1.8.0-openjdk
+cd k8s-fluentd-elasticsearch/
+cd Image/
+docker build -t fluentd-elasticsearch .
+docker tag fluentd-elasticsearch 192.168.11.215:5000/fluentd-elasticsearch
+docker push 192.168.11.215:5000/fluentd-elasticsearch
+docker rmi 192.168.11.215:5000/fluentd-elasticsearch
+docker rmi fluentd-elasticsearch
+cd ..
+cd yaml/
+vim fluentd-es-ds.yaml #修改镜像地址
+kubectl apply -f fluentd-es-configmap.yaml
+kubectl apply -f fluentd-es-ds.yaml
+cd ..
+cd script/
+sh es.sh
+#每个服务器都要执行
+yum install elasticsearch-6.0.0.rpm #版本号要和kibana匹配
+systemctl start elasticsearch
+systemctl enable elasticsearch
+netstat -anp |grep 9020
+vim /etc/elasticsearch/elasticsearch.yml #修改绑定地址端口
+systemctl restart elasticsearch
+netstat -anp |grep 9020
+kubectl get node 
+kubectl label nodes kube-master  beta.kubernetes.io/fluentd-ds-ready=true
+kubectl label nodes kube-node1  beta.kubernetes.io/fluentd-ds-ready=true
+kubectl label nodes kube-node2  beta.kubernetes.io/fluentd-ds-ready=true
+kubectl apply -f fluentd-es-ds.yaml
+kubectl apply -f fluentd-es-configmap.yaml
+kubectl get -f fluentd-es-ds.yaml
+kubectl describe -f fluentd-es-ds.yaml 
+cd ..
+cd script/
+yum install -y kibana-6.0.0-x86_64.rpm
+vim /etc/kibana/kibana.yml  #修改 绑定地址/端口  指定elasticsearch地址
+systemctl enable kibana
+systemctl start kibana
+netstat -anp |grep 5601
+curl http://127.0.0.1:9200
